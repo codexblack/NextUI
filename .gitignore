@@ -7,7 +7,7 @@
 
 build
 releases
-toolchains
+#toolchains
 libretro-common
 
 **/cores/src
