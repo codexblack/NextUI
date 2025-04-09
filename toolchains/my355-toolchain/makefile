@@ -11,7 +11,7 @@ NORM=$(shell tput sgr0)
 .build: Dockerfile
 	$(info $(BOLD)Building $(TOOLCHAIN_NAME)...$(NORM))
 	mkdir -p ./workspace
-	docker build --platform=linux/arm64/v8 -t $(TOOLCHAIN_NAME) .
+	docker build -t $(TOOLCHAIN_NAME) .
 	touch .build
 
 ifeq ($(CONTAINER_NAME),)

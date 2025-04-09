@@ -35,7 +35,7 @@ const char *lr_effect_names[] = {
         LOG_info("saving settings plat");
         char diskfilename[256];
         char* device = getenv("DEVICE");
-        is_brick = exactMatch("brick", device);
+        int is_brick = 1;
         int maxlights = 4;
         if(is_brick) {
             snprintf(diskfilename, sizeof(diskfilename), SHARED_USERDATA_PATH "/ledsettings_brick.txt");
@@ -226,7 +226,7 @@ void handle_light_input(LightSettings *light, SDL_Event *event, int selected_set
 int main(int argc, char *argv[])
 {
     char* device = getenv("DEVICE");
-    is_brick = exactMatch("brick", device);
+    int is_brick = 1;
     
     if (is_brick) {
         const char *brick_names[] = {"F1 key", "F2 key", "Top bar", "L&R triggers"};

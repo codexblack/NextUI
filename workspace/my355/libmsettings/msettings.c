@@ -17,24 +17,46 @@
 #define JACK_STATE_PATH "/sys/class/gpio/gpio150/value"
 #define HDMI_STATE_PATH "/sys/class/drm/card0-HDMI-A-1/status"
 
-#define SETTINGS_VERSION 2
-typedef struct Settings {
+typedef struct SettingsV7 {
 	int version; // future proofing
 	int brightness;
+	int colortemperature;
 	int headphones;
 	int speaker;
+	int mute;
+	int contrast;
+	int saturation;
+	int exposure;
+	int mutedbrightness;
+	int mutedcolortemperature;
+	int mutedcontrast;
+	int mutedsaturation;
+	int hdmi;
+	int mutedexposure;
 	int unused[2]; // for future use
 	// NOTE: doesn't really need to be persisted but still needs to be shared
 	int jack; 
-	int hdmi; 
-} Settings;
+} SettingsV7;
+
+#define SETTINGS_VERSION 7
+typedef SettingsV7 Settings;
+
 static Settings DefaultSettings = {
 	.version = SETTINGS_VERSION,
-	.brightness = 2,
-	.headphones = 4,
-	.speaker = 8,
+	.brightness = SETTINGS_DEFAULT_BRIGHTNESS,
+	.colortemperature = SETTINGS_DEFAULT_COLORTEMP,
+	.headphones = SETTINGS_DEFAULT_HEADPHONE_VOLUME,
+	.speaker = SETTINGS_DEFAULT_VOLUME,
+	.mute = 0,
+	.contrast = SETTINGS_DEFAULT_CONTRAST,
+	.saturation = SETTINGS_DEFAULT_SATURATION,
+	.exposure = SETTINGS_DEFAULT_EXPOSURE,
+	.mutedbrightness = SETTINGS_DEFAULT_MUTE_NO_CHANGE,
+	.mutedcolortemperature = SETTINGS_DEFAULT_MUTE_NO_CHANGE,
+	.mutedcontrast = SETTINGS_DEFAULT_MUTE_NO_CHANGE,
+	.mutedsaturation = SETTINGS_DEFAULT_MUTE_NO_CHANGE,
+	.mutedexposure = SETTINGS_DEFAULT_MUTE_NO_CHANGE,
 	.jack = 0,
-	.hdmi = 0,
 };
 static Settings* settings;
 
@@ -94,6 +116,8 @@ static int HDMI_enabled(void) {
 	getFile(HDMI_STATE_PATH, value, 64);
 	return exactMatch(value, "connected\n");
 }
+
+static int is_brick = 0;
 
 void InitSettings(void) {	
 	sprintf(SettingsPath, "%s/msettings.bin", getenv("USERDATA_PATH"));
@@ -155,6 +179,145 @@ static inline void SaveSettings(void) {
 	}
 }
 
+///////// Platform specific scaling
+
+int scaleBrightness(int value) {
+	int raw;
+	if (is_brick) {
+		switch (value) {
+			case 0: raw=1; break; 		// 0
+			case 1: raw=8; break; 		// 8
+			case 2: raw=16; break; 		// 8
+			case 3: raw=32; break; 		// 16
+			case 4: raw=48; break;		// 16
+			case 5: raw=72; break;		// 24
+			case 6: raw=96; break;		// 24
+			case 7: raw=128; break;		// 32
+			case 8: raw=160; break;		// 32
+			case 9: raw=192; break;		// 32
+			case 10: raw=255; break;	// 64
+		}
+	}
+	else {
+		switch (value) {
+			case 0: raw=4; break; 		//  0
+			case 1: raw=6; break; 		//  2
+			case 2: raw=10; break; 		//  4
+			case 3: raw=16; break; 		//  6
+			case 4: raw=32; break;		// 16
+			case 5: raw=48; break;		// 16
+			case 6: raw=64; break;		// 16
+			case 7: raw=96; break;		// 32
+			case 8: raw=128; break;		// 32
+			case 9: raw=192; break;		// 64
+			case 10: raw=255; break;	// 64
+		}
+	}
+	return raw;
+}
+int scaleColortemp(int value) {
+	int raw;
+	
+	switch (value) {
+		case 0: raw=-200; break; 		// 8
+		case 1: raw=-190; break; 		// 8
+		case 2: raw=-180; break; 		// 16
+		case 3: raw=-170; break;		// 16
+		case 4: raw=-160; break;		// 24
+		case 5: raw=-150; break;		// 24
+		case 6: raw=-140; break;		// 32
+		case 7: raw=-130; break;		// 32
+		case 8: raw=-120; break;		// 32
+		case 9: raw=-110; break;	// 64
+		case 10: raw=-100; break; 		// 0
+		case 11: raw=-90; break; 		// 8
+		case 12: raw=-80; break; 		// 8
+		case 13: raw=-70; break; 		// 16
+		case 14: raw=-60; break;		// 16
+		case 15: raw=-50; break;		// 24
+		case 16: raw=-40; break;		// 24
+		case 17: raw=-30; break;		// 32
+		case 18: raw=-20; break;		// 32
+		case 19: raw=-10; break;		// 32
+		case 20: raw=0; break;	// 64
+		case 21: raw=10; break; 		// 0
+		case 22: raw=20; break; 		// 8
+		case 23: raw=30; break; 		// 8
+		case 24: raw=40; break; 		// 16
+		case 25: raw=50; break;		// 16
+		case 26: raw=60; break;		// 24
+		case 27: raw=70; break;		// 24
+		case 28: raw=80; break;		// 32
+		case 29: raw=90; break;		// 32
+		case 30: raw=100; break;		// 32
+		case 31: raw=110; break;	// 64
+		case 32: raw=120; break; 		// 0
+		case 33: raw=130; break; 		// 8
+		case 34: raw=140; break; 		// 8
+		case 35: raw=150; break; 		// 16
+		case 36: raw=160; break;		// 16
+		case 37: raw=170; break;		// 24
+		case 38: raw=180; break;		// 24
+		case 39: raw=190; break;		// 32
+		case 40: raw=200; break;		// 32
+	}
+	return raw;
+}
+int scaleContrast(int value) {
+	int raw;
+	
+	switch (value) {
+		// dont offer -5/ raw 0, looks like it might turn off the display completely?
+		case -4: raw=10; break;
+		case -3: raw=20; break;
+		case -2: raw=30; break;
+		case -1: raw=40; break;
+		case 0: raw=50; break;
+		case 1: raw=60; break;
+		case 2: raw=70; break;
+		case 3: raw=80; break;
+		case 4: raw=90; break;
+		case 5: raw=100; break;
+	}
+	return raw;
+}
+int scaleSaturation(int value) {
+	int raw;
+	
+	switch (value) {
+		case -5: raw=0; break;
+		case -4: raw=10; break;
+		case -3: raw=20; break;
+		case -2: raw=30; break;
+		case -1: raw=40; break;
+		case 0: raw=50; break;
+		case 1: raw=60; break;
+		case 2: raw=70; break;
+		case 3: raw=80; break;
+		case 4: raw=90; break;
+		case 5: raw=100; break;
+	}
+	return raw;
+}
+int scaleExposure(int value) {
+	int raw;
+	
+	switch (value) {
+		// stock OS also avoids setting anything lower, so we do the same here.
+		case -4: raw=10; break;
+		case -3: raw=20; break;
+		case -2: raw=30; break;
+		case -1: raw=40; break;
+		case 0: raw=50; break;
+		case 1: raw=60; break;
+		case 2: raw=70; break;
+		case 3: raw=80; break;
+		case 4: raw=90; break;
+		case 5: raw=100; break;
+	}
+	return raw;
+}
+
 int GetColortemp(void) { // 0-10
 	return 5;
 }
@@ -208,6 +371,50 @@ void SetRawBrightness(int val) { // 0 - 255
 	printf("SetRawBrightness(%i)\n", val); fflush(stdout);
 	putInt("/sys/class/backlight/backlight/brightness", val);
 }
+void SetRawColortemp(int val) { // 0 - 255
+	// if (settings->hdmi) return;
+	
+	printf("SetRawColortemp(%i)\n", val); fflush(stdout);
+
+	FILE *fd = fopen("/sys/class/disp/disp/attr/color_temperature", "w");
+	if (fd) {
+		fprintf(fd, "%i", val);
+		fclose(fd);
+	}
+}
+void SetRawContrast(int val){
+	// if (settings->hdmi) return;
+	
+	printf("SetRawContrast(%i)\n", val); fflush(stdout);
+
+	FILE *fd = fopen("/sys/class/disp/disp/attr/enhance_contrast", "w");
+	if (fd) {
+		fprintf(fd, "%i", val);
+		fclose(fd);
+	}
+}
+void SetRawSaturation(int val){
+	// if (settings->hdmi) return;
+
+	printf("SetRawSaturation(%i)\n", val); fflush(stdout);
+
+	FILE *fd = fopen("/sys/class/disp/disp/attr/enhance_saturation", "w");
+	if (fd) {
+		fprintf(fd, "%i", val);
+		fclose(fd);
+	}
+}
+void SetRawExposure(int val){
+	// if (settings->hdmi) return;
+
+	printf("SetRawExposure(%i)\n", val); fflush(stdout);
+
+	FILE *fd = fopen("/sys/class/disp/disp/attr/enhance_bright", "w");
+	if (fd) {
+		fprintf(fd, "%i", val);
+		fclose(fd);
+	}
+}
 void SetRawVolume(int val) { // 0 - 100
 	printf("SetRawVolume(%i)\n", val); fflush(stdout);
 	
@@ -249,3 +456,88 @@ void SetHDMI(int value) {
 
 int GetMute(void) { return 0; }
 void SetMute(int value) {}
+
+int GetContrast(void)
+{
+	return settings->contrast;
+}
+int GetSaturation(void)
+{
+	return settings->saturation;
+}
+int GetExposure(void)
+{
+	return settings->exposure;
+}
+int GetMutedBrightness(void)
+{
+	return settings->mutedbrightness;
+}
+int GetMutedColortemp(void)
+{
+	return settings->mutedcolortemperature;
+}
+int GetMutedContrast(void)
+{
+	return settings->mutedcontrast;
+}
+int GetMutedSaturation(void)
+{
+	return settings->mutedsaturation;
+}
+int GetMutedExposure(void)
+{
+	return settings->mutedexposure;
+}
+
+void SetContrast(int value)
+{
+	int raw = scaleContrast(value);
+	SetRawContrast(raw);
+	settings->contrast = value;
+	SaveSettings();
+}
+void SetSaturation(int value)
+{
+	int raw = scaleSaturation(value);
+	SetRawSaturation(raw);
+	settings->saturation = value;
+	SaveSettings();
+}
+void SetExposure(int value)
+{
+	int raw = scaleExposure(value);
+	SetRawExposure(raw);
+	settings->exposure = value;
+	SaveSettings();
+}
+
+void SetMutedBrightness(int value)
+{
+	settings->mutedbrightness = value;
+	SaveSettings();
+}
+
+void SetMutedColortemp(int value)
+{
+	settings->mutedcolortemperature = value;
+	SaveSettings();
+}
+
+void SetMutedContrast(int value)
+{
+	settings->mutedcontrast = value;
+	SaveSettings();
+}
+
+void SetMutedSaturation(int value)
+{
+	settings->mutedsaturation = value;
+	SaveSettings();
+}
+
+void SetMutedExposure(int value)
+{
+	settings->mutedexposure = value;
+	SaveSettings();
+}

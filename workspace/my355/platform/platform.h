@@ -8,6 +8,7 @@
 #include "sdl.h"
 
 ///////////////////////////////
+extern int is_brick;
 
 #define	BUTTON_UP		BUTTON_NA
 #define	BUTTON_DOWN		BUTTON_NA
