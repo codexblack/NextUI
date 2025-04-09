@@ -68,7 +68,7 @@ static struct VID_Context {
 	SDL_Texture* texture;
 	SDL_Texture* target;
 	SDL_Texture* effect;
-
+	SDL_Texture* overlay;
 	SDL_Surface* buffer;
 	SDL_Surface* screen;
 	
@@ -648,4 +648,42 @@ char* PLAT_getModel(void) {
 
 int PLAT_isOnline(void) {
 	return online;
+}
+
+void PLAT_getCPUTemp() {
+	currentcputemp = getInt("/sys/devices/virtual/thermal/thermal_zone0/temp")/1000;
+
+}
+void PLAT_getBatteryStatusFine(int* is_charging, int* charge)
+{
+	// *is_charging = 0;
+	// *charge = PWR_LOW_CHARGE;
+	// return;
+	
+	*is_charging = getInt("/sys/class/power_supply/axp2202-usb/online");
+
+	*charge = getInt("/sys/class/power_supply/axp2202-battery/capacity");
+
+	// // wifi status, just hooking into the regular PWR polling
+	char status[16];
+	getFile("/sys/class/net/wlan0/operstate", status,16);
+	online = prefixMatch("up", status);
+}
+
+int screenx = 0;
+int screeny = 0;
+void PLAT_setOffsetX(int x) {
+    if (x < 0 || x > 100) return;
+    screenx = x - 50;
+}
+void PLAT_setOffsetY(int y) {
+    if (y < 0 || y > 100) return;
+    screeny = y - 50;  
+}
+
+void PLAT_setOverlay(int select, const char* tag) {
+    if (vid.overlay) {
+        SDL_DestroyTexture(vid.overlay);
+        vid.overlay = NULL;
+    }
 }
