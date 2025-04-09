@@ -12,7 +12,7 @@ endif
 
 ifeq (,$(PLATFORMS))
 #PLATFORMS = miyoomini trimuismart rg35xx rg35xxplus my355 tg5040 zero28 rgb30 m17 gkdpixel my282 magicmini
-PLATFORMS = tg5040
+PLATFORMS = tg5040 my355
 endif
 
 ###########################################################
@@ -140,18 +140,18 @@ done:
 special:
 	# setup miyoomini/trimui/magicx family .tmp_update in BOOT
 	mv ./build/BOOT/common ./build/BOOT/.tmp_update
-#	mv ./build/BOOT/miyoo ./build/BASE/
+	mv ./build/BOOT/miyoo ./build/BASE/
 	mv ./build/BOOT/trimui ./build/BASE/
 #	mv ./build/BOOT/magicx ./build/BASE/
-#	cp -R ./build/BOOT/.tmp_update ./build/BASE/miyoo/app/
+	cp -R ./build/BOOT/.tmp_update ./build/BASE/miyoo/app/
 	cp -R ./build/BOOT/.tmp_update ./build/BASE/trimui/app/
 #	cp -R ./build/BOOT/.tmp_update ./build/BASE/magicx/
 #	cp -R ./build/BASE/miyoo ./build/BASE/miyoo354
-#	cp -R ./build/BASE/miyoo ./build/BASE/miyoo355
-#ifneq (,$(findstring my355, $(PLATFORMS)))
-#	cp -R ./workspace/my355/init ./build/BASE/miyoo355/app/my355
-#	cp -r ./workspace/my355/other/squashfs/output/* ./build/BASE/miyoo355/app/my355/payload/
-#endif
+	cp -R ./build/BASE/miyoo ./build/BASE/miyoo355
+ifneq (,$(findstring my355, $(PLATFORMS)))
+	cp -R ./workspace/my355/init ./build/BASE/miyoo355/app/my355
+	cp -r ./workspace/my355/other/squashfs/output/* ./build/BASE/miyoo355/app/my355/payload/
+endif
 
 tidy:
 	# ----------------------------------------------------
